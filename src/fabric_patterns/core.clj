@@ -2,7 +2,8 @@
   (:import
     [java.awt.image BufferedImage]
     [javax.swing JFrame WindowConstants]
-    [java.awt Graphics Dimension Graphics2D RenderingHints Color BasicStroke]))
+    [java.awt Graphics Dimension Graphics2D RenderingHints Color BasicStroke]
+    [java.awt.geom Ellipse2D$Float]))
 
 
 (defn create-image [name width height]
@@ -58,6 +59,33 @@
   (.drawArc graphics (- x r) (- y r) (* 2 r) (* 2 r) start length)
   (repaint))
 
+
+(defmacro with-clip [graphics clip & body]
+  `(let [previous-clip# (.getClip ~graphics)]
+     (try
+       (.setClip ~graphics ~clip)
+       ~@body
+       (finally
+         (.setClip ~graphics previous-clip#)))))
+
+(defn blob [{:keys [graphics repaint] :as image} x y radius colour]
+  (with-clip graphics (Ellipse2D$Float. (- x radius) (- y radius) (* 2 radius) (* 2 radius))
+    (let [highlight-offset 0.3]
+      (doseq [i (range 0 1 0.01)]
+        (let [ring-radius (* i radius (+ 1.2 highlight-offset))
+              light-factor (- 1.5 i)
+              light-bump (* 50 (- 1.5 i))
+              re-light (fn [v] (int (min 255 (* (+ v light-bump) light-factor))))]
+          (circle image
+                  (+ x (* radius highlight-offset))
+                  (- y (* radius highlight-offset))
+                  ring-radius
+                  (Color. (re-light (.getRed colour))
+                          (re-light (.getGreen colour))
+                          (re-light (.getBlue colour)))
+                  2)))))
+  (repaint))
+
 (def sample (create-image "Sample" 1000 1000))
 
 (def green (new-colour 100 255 70))
@@ -66,6 +94,9 @@
 (def highlight (new-colour 255 255 255 127))
 (def lowlight (new-colour 0 0 0 127))
 
+
+
+
 (do
 
   (clear sample dark-pink)
@@ -73,24 +104,23 @@
 
   ;(circle sample 100 100 100 (new-colour 100 255 70) 5)
 
-  (let [ring-count 49]
+  (let [ring-count 50]
     (doseq [[y colour r] (map vector
                               (range 0 1000 (/ 1000 ring-count))
                               (cycle [pink green])
-                              (map #(+ 125 (* 50 (Math/cos %)))
+                              (map #(+ 60 (* 50 (Math/cos %)))
                                    (range 0 (* 2 Math/PI) (/ (* 2 Math/PI) ring-count)))
                               )
-            [x-offset y-offset start-arc] (map vector
-                                               (range 0 1000 250)
-                                               (cycle [0 500])
-                                               (cycle [0 180]))]
+            [x-offset y-offset] (map vector
+                                     (range 0 1000 250)
+                                     (cycle [0 500]))]
 
       (doseq [wrap-x [-1000 0 1000]
               wrap-y [-1000 0 1000]]
         ;(circle sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r colour 3)
-        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r start-arc 180 colour 3)
-        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r (+ start-arc 45) 20 highlight 5)
-        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r (+ start-arc 135) 45 lowlight 3)
+        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r 0 180 colour 3)
+        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r 45 20 highlight 5)
+        (arc sample (+ wrap-x x-offset) (+ wrap-y y y-offset) r 135 45 lowlight 3)
 
 
         )
@@ -98,7 +128,6 @@
       ))
 
   )
-
 
 ;(defn rgb->int [r g b]
 ;  (bit-or (bit-shift-left r 16)
