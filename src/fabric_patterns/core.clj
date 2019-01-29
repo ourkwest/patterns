@@ -259,10 +259,27 @@
             (.fillPolygon graphics polygon)))
   (repaint))
 
+
+(defn flower [x y z r rotation colour]
+  (for [[x-offset y-offset] (map vector
+                                 (range 0 1000 250)
+                                 (cycle [0 500]))]
+    (let [points (for [i (range 0 1 0.001)]
+                   (let [theta (+ (* i 4 Math/PI))
+                         radius (* r (Math/sin (* theta 12/8)))]
+                     [(* radius (Math/sin (+ rotation theta)))
+                      (* radius (Math/cos (+ rotation theta)))]))
+          xs (mapv #(+ x (first %) x-offset) points)
+          ys (mapv #(+ y (second %) y-offset) points)]
+      (wrap (polygon xs ys z (fill colour))))))
+
+(def offset-to-vines 125)
+
 (do
   (->> (concat
          [(clear dark-pink)]
 
+         ; cages
          (let [ring-count 50]
            (for [[y r] (map vector
                             (range 0 1000 (/ 1000 ring-count))
@@ -284,6 +301,23 @@
                 ;(wrap (arc x-offset (+ y y-offset) 10 r 135 45 lowlight 3))
                 ])))
 
+         ; flowers
+         ;(for [[y r rotation] (map vector
+         ;                          [-260 -160 0 160 260]
+         ;                          [10 40 75 40 10]
+         ;                          (iterate (partial + (* Math/PI 1/6)) 0))]
+         ;  (flower 0 y -3000 (* r 1.45) rotation (new-colour 255 255 100)))
+
+         ; pearls
+         ;(for [[y r] (map vector
+         ;                 [-260 -160 0 160 260]
+         ;                 [10 40 75 40 10])
+         ;      [x-offset y-offset] (map vector
+         ;                               (range 0 1000 250)
+         ;                               (cycle [0 500]))]
+         ;  [(wrap (blob x-offset (+ y y-offset) -2001 r green))
+         ;   (wrap (circle x-offset (+ y y-offset) -2000 r (stroke black 1)))])
+
          (for [[y r] (map vector
                           [-260 -160 0 160 260]
                           [10 40 75 40 10])
@@ -293,6 +327,35 @@
            [(wrap (blob x-offset (+ y y-offset) -2001 r green))
             (wrap (circle x-offset (+ y y-offset) -2000 r (stroke black 1)))])
 
+         ; vines
+         (for [[x-offset y-offset] (map vector
+                                        (range 0 1000 250)
+                                        (cycle [0 500]))
+               [[y1 xb1 xc1 xd1 zb1 zc1 zd1]
+                [y2 xb2 xc2 xd2 _ _ _]]
+               (partition 2 1
+                 (for [i (take 65 (range 0 2 (/ 1 64)))]
+                   (let [y (* i 1000)
+                         theta-a (* i 2 Math/PI)
+                         theta-b (+ (* i 8 Math/PI) (* Math/PI 0/3))
+                         theta-c (+ (* i 8 Math/PI) (* Math/PI 1/3))
+                         theta-d (+ (* i 8 Math/PI) (* Math/PI 2/3))
+                         x (+ offset-to-vines (* 50 (Math/cos theta-a)))
+                         xb (+ x (* 20 (Math/sin theta-b)))
+                         xc (+ x (* 20 (Math/sin theta-c)))
+                         xd (+ x (* 20 (Math/sin theta-d)))
+                         zb (* 20 (Math/cos theta-b))
+                         zc (* 20 (Math/cos theta-c))
+                         zd (* 20 (Math/cos theta-d))]
+                     [y xb xc xd zb zc zd])))]
+
+           [(wrap (line (+ xb1 x-offset) (+ y1 y-offset) (+ xb2 x-offset) (+ y2 y-offset) zb1 (stroke (darker green) 5)))
+            (wrap (line (+ xc1 x-offset) (+ y1 y-offset) (+ xc2 x-offset) (+ y2 y-offset) zc1 (stroke (much darker green) 5)))
+            (wrap (line (+ xd1 x-offset) (+ y1 y-offset) (+ xd2 x-offset) (+ y2 y-offset) zd1 (stroke (darker (darker green)) 5)))]
+
+           )
+
+         ; leaves
          (for [i (range 0 1 (/ 1 16))
                [x-offset y-offset] (map vector
                                         (range 0 1000 250)
@@ -300,11 +363,11 @@
 
            (let [y (+ (* i 1000) y-offset)
                  theta (* i 2 Math/PI)
-                 x (+ (+ 120 (* 50 (Math/cos theta))) x-offset)
+                 x (+ offset-to-vines (* 50 (Math/cos theta)) x-offset (if (even? (int (* i 16)))
+                                                                 20
+                                                                 -20))
                  leaf-colour (much lighter-or-darker (much lighter-or-darker (much lighter-or-darker (much lighter-or-darker green))))
                  leaf-length 25]
-
-
 
              ; each leaf
              (let [leaf-points (for [n
@@ -334,9 +397,70 @@
                    x-coords (concat (map first half-one) (map first half-two))
                    y-coords (concat (map second half-one) (map second half-two))]
 
-               (wrap (polygon x-coords y-coords 0 (merge (fill leaf-colour) (stroke black 1))))
+               (wrap (polygon x-coords y-coords 100 (merge (fill leaf-colour) (stroke black 1))))
 
                )))
+
+         ; flowers
+
+
+         (for [i (range 0 1 (/ 1 5))]
+
+           (let [y (* i 1000)
+                 theta (* i 2 Math/PI)
+                 x (+ offset-to-vines (* 50 (Math/cos theta)))
+                 rotations (iterate (partial + 0.5) (rand 10))
+                 sizes (iterate (partial * 0.9) 50)
+                 zs (iterate inc 1000)
+                 colour (new-colour 255 255 100 200)
+                 ]
+
+             (concat
+               (for [[x-offset y-offset] (map vector
+                                              (range 0 1000 250)
+                                              (cycle [0 500]))]
+                 (wrap (circle (+ x x-offset) (+ y y-offset) 999 25 (fill pink))))
+               [
+                (flower x y (nth zs 0) (nth sizes 0) (nth rotations 0) colour)
+                (flower x y (nth zs 1) (nth sizes 1) (nth rotations 1) colour)
+                (flower x y (nth zs 2) (nth sizes 2) (nth rotations 2) colour)
+                ])))
+
+         ;(for [[x-offset y-offset] (map vector
+         ;                               (range 0 1000 250)
+         ;                               (cycle [0 500]))]
+         ;  (let [points (for [i (range 0 1 0.001)]
+         ;                 (let [theta (* i 4 Math/PI)
+         ;                       radius (* 100 (Math/sin (* theta 12/8)))]
+         ;                   [(* radius (Math/sin theta))
+         ;                    (* radius (Math/cos theta))]))
+         ;        xs (mapv #(+ (first %) x-offset) points)
+         ;        ys (mapv #(+ (second %) y-offset) points)
+         ;        ]
+         ;    (wrap (polygon xs ys -3000
+         ;                   (merge
+         ;                     (fill (new-colour 255 255 100 100))
+         ;                     (stroke black 5)
+                              ;)))
+             ;))
+
+         ;(for [[[x1 y1] [x2 y2]]
+         ;      (partition 2 1
+         ;        (for [i (range 0 1 0.001)]
+         ;          (let [theta (* i 8 Math/PI)
+         ;                radius (* 100 (Math/sin (* theta 12/8)))]
+         ;            [(* radius (Math/sin theta))
+         ;             (* radius (Math/cos theta))])))
+         ;      [x-offset y-offset] (map vector
+         ;                               (range 0 1000 250)
+         ;                               (cycle [0 500]))]
+         ;
+         ;  (line (+ x1 x-offset) (+ y1 y-offset)
+         ;        (+ x2 x-offset) (+ y2 y-offset) 10000 (stroke (new-colour 255 255 0) 10))
+         ;
+         ;  )
+
+
 
          )
        flatten
