@@ -523,4 +523,18 @@
 
   (draw-pattern)
 
+  ; Pattern 1
+  (render-all example-2
+              (clear green)
+              (circle 500 500 0 300 (fill pink))
+              (circle 500 500 1000 200 (fill (darker green)))
+              (flower 500 500 2000 300 0 pink)
+              (flower 500 500 3000 12 0 (new-colour 255 150 0))
+              (flower 500 500 4000 120 0 (new-colour 255 150 0))
+              (flower 500 500 5000 320 0 (new-colour 255 150 0))
+              (flower 500 500 6000 320 0 (new-colour 0 0 255))
+              (polygon [450 550 550 450]
+                       [450 450 550 550]
+                       7000 (fill (new-colour 100 0 255))))
+
   )
