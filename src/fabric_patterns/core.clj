@@ -314,7 +314,7 @@
        println))
 
 (defn flower [x y z r rotation colour]
-  (for [[x-offset y-offset] (map vector
+  #_(for [[x-offset y-offset] (map vector
                                  (range 0 1000 250)
                                  (cycle [0 500]))]
     (let [points (for [i (range 0 1 0.001)]
@@ -324,7 +324,27 @@
                       (* radius (Math/cos (+ rotation theta)))]))
           xs (mapv #(+ x (first %) x-offset) points)
           ys (mapv #(+ y (second %) y-offset) points)]
-      (polygon xs ys z (fill colour)))))
+      (polygon xs ys z (fill colour))))
+  (let [points (for [i (range 0 1 0.001)]
+                 (let [theta (+ (* i 4 Math/PI))
+                       radius (* r (Math/sin (* theta 12/8)))]
+                   [(* radius (Math/sin (+ rotation theta)))
+                    (* radius (Math/cos (+ rotation theta)))]))
+        xs (mapv #(+ x (first %)) points)
+        ys (mapv #(+ y (second %)) points)]
+    (polygon xs ys z (fill colour))))
+
+(defn heart [x y z size rotation colour]
+  (let [radius (* size 0.6)
+        separation (* size 0.5)
+        width (* size 1.0)
+        height (* size 1.2)
+        drop (* size 0.32)]
+    [(circle (+ x separation) y z radius (fill colour))
+     (circle (- x separation) y z radius (fill colour))
+     (polygon [(- x width) (+ x width) x]
+              [(+ y drop) (+ y drop) (+ y drop height)]
+              z (fill colour))]))
 
 (def offset-to-vines 125)
 
@@ -524,6 +544,7 @@
   (draw-pattern)
 
   ; Pattern 1
+  (def example-2 (create-image "Example" 1000 1000))
   (render-all example-2
               (clear green)
               (circle 500 500 0 300 (fill pink))
@@ -536,5 +557,21 @@
               (polygon [450 550 550 450]
                        [450 450 550 550]
                        7000 (fill (new-colour 100 0 255))))
+
+  (def yoolik1 (create-image "yoolik1" 1000 1000))
+  (render-all yoolik1
+              (clear (new-colour 0 0 255))
+              (circle 1000 1000 0 353 (fill Color/ORANGE))
+              (flower 1000 1000 0 500 0 pink)
+              (polygon [950 1050 1100 1050  950  900]
+                       [900  900 1000 1100 1100 1000]
+                       1
+                       (fill (new-colour 150 150 255))
+                       )
+              (circle 500 500 0 250 (merge (stroke (new-colour 200 0 200) 20)
+                                           (fill Color/ORANGE)))
+              (circle 500 500 0 176 (fill (new-colour 0 0 255)))
+              (flower 500 500 0 250 0 pink)
+              (circle 500 500 0 100 (fill (new-colour 170 0 180))))
 
   )
