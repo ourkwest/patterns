@@ -10,6 +10,8 @@
     [java.io File]))
 
 
+(def TAU (* 2 Math/PI))
+
 (defn create-image [name width height]
   (let [image (BufferedImage. width height BufferedImage/TYPE_INT_RGB)
         graphics (.getGraphics image)
@@ -44,6 +46,10 @@
    (Color. r g b))
   ([r g b a]
    (Color. r g b a)))
+
+(defn doubler [shape]
+  [shape
+   (assoc shape :x 150)])
 
 (defn clear [colour]
   {:op     :clear
@@ -93,6 +99,15 @@
    :ys y-coords
    :z       z
    :style   style})
+
+(defn regular-polygon [x y z number-of-sides size rotation style star?]
+  (let [angles (map #(+ % rotation)
+                    (if star?
+                      (range 0 (* 2 TAU) (* 2 (/ TAU number-of-sides)))
+                      (range 0 TAU (/ TAU number-of-sides))))
+        x-coords (map #(+ x (* size (Math/sin %))) angles)
+        y-coords (map #(+ y (* size (Math/cos %))) angles)]
+    (polygon x-coords y-coords z style)))
 
 (defn wrap [instruction]
   (cond
@@ -520,6 +535,9 @@
     (ImageIO/write ^RenderedImage (:image sample) "png" (io/file (str "sample-2.png")))))
 
 
+(defn spit-image-to-file [image filename]
+  (ImageIO/write ^RenderedImage (:image image) "png" (io/file (str filename ".png"))))
+
 
 (comment
 
@@ -559,19 +577,34 @@
                        7000 (fill (new-colour 100 0 255))))
 
   (def yoolik1 (create-image "yoolik1" 1000 1000))
-  (render-all yoolik1
-              (clear (new-colour 0 0 255))
-              (circle 1000 1000 0 353 (fill Color/ORANGE))
-              (flower 1000 1000 0 500 0 pink)
-              (polygon [950 1050 1100 1050  950  900]
-                       [900  900 1000 1100 1100 1000]
-                       1
-                       (fill (new-colour 150 150 255))
-                       )
-              (circle 500 500 0 250 (merge (stroke (new-colour 200 0 200) 20)
-                                           (fill Color/ORANGE)))
-              (circle 500 500 0 176 (fill (new-colour 0 0 255)))
-              (flower 500 500 0 250 0 pink)
-              (circle 500 500 0 100 (fill (new-colour 170 0 180))))
+  (do (render-all yoolik1
+                  (clear (new-colour 0 0 255))
+                  (circle 1000 1000 0 353 (fill Color/ORANGE))
+                  (flower 1000 1000 0 500 0 pink)
+                  (polygon [950 1050 1100 1050 950 900]
+                           [900 900 1000 1100 1100 1000]
+                           1
+                           (fill (new-colour 150 150 255))
+                           )
+                  (circle 500 500 0 250 (merge (stroke (new-colour 200 0 200) 20)
+                                               (fill Color/ORANGE)))
+                  (circle 500 500 0 176 (fill (new-colour 0 0 255)))
+                  (flower 500 500 0 250 0 pink)
+                  (circle 500 500 0 100 (fill (new-colour 170 0 180)))
+
+                  ;(circle 500 500 0 100 (fill (new-colour 255 255 0)))
+
+                  (regular-polygon 500 500 1 3 50 0 (fill (new-colour 255 255 0)) false)
+                  (regular-polygon 500 500 1 3 50 (/ TAU 2) (fill (new-colour 255 255 0)) false)
+
+                  (let [x-dist 50
+                        y-dist 50
+                        star-size 40]
+                    [(regular-polygon x-dist y-dist 1 5 star-size 0.12 (fill (new-colour 255 0 0)) true)
+                     (regular-polygon x-dist (- 1000 y-dist) 1 5 star-size (- (/ TAU 2) 0.12) (fill (new-colour 255 0 0)) true)
+                     (regular-polygon (- 1000 x-dist) y-dist 1 5 star-size -0.12 (fill (new-colour 255 0 0)) true)
+                     (regular-polygon (- 1000 x-dist) (- 1000 y-dist) 1 5 star-size (+ (/ TAU 2) 0.12) (fill (new-colour 255 0 0)) true)])
+                  )
+      (spit-image-to-file yoolik1 "yoolik-1"))
 
   )
